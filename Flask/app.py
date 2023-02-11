@@ -1,5 +1,6 @@
 from datetime import date
 import json
+from flask_ngrok import run_with_ngrok
 from flask import Flask, render_template
 from functools import lru_cache
 import subprocess
@@ -58,9 +59,10 @@ def get_ttl_hash(seconds=600):
     return round(time.time() / seconds)
 
 
+
 app = Flask(__name__)
 app.jinja_env.add_extension('jinja2.ext.loopcontrols')
-
+run_with_ngrok(app) 
 
 @app.route("/")
 def index():
@@ -69,3 +71,4 @@ def index():
     betmgm = fetch_betmgm(ttl_hash=get_ttl_hash())
 
     return render_template('index.html', today=date.today(), data={"fanduel": fanduel, "draftkings": draftkings, "betmgm": betmgm})
+app.run()
