@@ -1,16 +1,19 @@
 import os
 import sqlite3
-import numpy as np
-import pandas as pd
 import sys
 from datetime import datetime
+
+import numpy as np
+import pandas as pd
 from tqdm import tqdm
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
-from Utils.Dictionaries import team_index_07, team_index_08, team_index_12, team_index_13, team_index_14, team_index_current
+
+sys.path.insert(1, os.path.join(sys.path[0], '../..'))
+from src.Utils.Dictionaries import team_index_07, team_index_08, team_index_12, team_index_13, team_index_14, team_index_current
 
 # season_array = ["2007-08", "2008-09", "2009-10", "2010-11", "2011-12", "2012-13", "2013-14", "2014-15", "2015-16",
 #                 "2016-17", "2017-18", "2018-19", "2019-20", "2020-21", "2021-22", "2022-23"]
-season_array = ["2012-13", "2013-14", "2014-15", "2015-16", "2016-17", "2017-18", "2018-19", "2019-20", "2020-21", "2021-22", "2022-23"]
+season_array = ["2012-13", "2013-14", "2014-15", "2015-16", "2016-17", "2017-18", "2018-19", "2019-20", "2020-21",
+                "2021-22", "2022-23","2023-24"]
 
 df = pd.DataFrame
 scores = []
@@ -18,6 +21,8 @@ win_margin = []
 OU = []
 OU_Cover = []
 games = []
+days_rest_away = []
+days_rest_home = []
 teams_con = sqlite3.connect("../../Data/teams.sqlite")
 odds_con = sqlite3.connect("../../Data/odds.sqlite")
 
@@ -52,10 +57,11 @@ for season in tqdm(season_array):
                 continue
 
         team_df = pd.read_sql_query(f"select * from \"teams_{year}-{month}-{day}\"", teams_con, index_col="index")
-
         if len(team_df.index) == 30:
             scores.append(row[9])
             OU.append(row[5])
+            days_rest_home.append(row[11])
+            days_rest_away.append(row[12])
             if row[10] > 0:
                 win_margin.append(1)
             else:
@@ -80,7 +86,7 @@ for season in tqdm(season_array):
             elif season == '2013-14':
                 home_team_series = team_df.iloc[team_index_13.get(home_team)]
                 away_team_series = team_df.iloc[team_index_13.get(away_team)]
-            elif season == '2022-23':
+            elif season == '2022-23' or season == '2023-24':
                 home_team_series = team_df.iloc[team_index_current.get(home_team)]
                 away_team_series = team_df.iloc[team_index_current.get(away_team)]
             else:
@@ -103,11 +109,13 @@ frame['Score'] = np.asarray(scores)
 frame['Home-Team-Win'] = np.asarray(win_margin)
 frame['OU'] = np.asarray(OU)
 frame['OU-Cover'] = np.asarray(OU_Cover)
+frame['Days-Rest-Home'] = np.asarray(days_rest_home)
+frame['Days-Rest-Away'] = np.asarray(days_rest_away)
 # fix types
 for field in frame.columns.values:
     if 'TEAM_' in field  or 'Date' in field or field not in frame:
         continue
     frame[field] = frame[field].astype(float)
 con = sqlite3.connect("../../Data/dataset.sqlite")
-frame.to_sql("dataset_2012-23", con, if_exists="replace")
+frame.to_sql("dataset_2012-24", con, if_exists="replace")
 con.close()
